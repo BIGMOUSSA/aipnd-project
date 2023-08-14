@@ -101,3 +101,9 @@ ENV/
 .mypy_cache/
 
 .github/**
+
+#image
+flowers/
+*.pth
+*.jpg
+
