@@ -3,7 +3,7 @@
 #%config InlineBackend.figure_format = 'retina'
 
 import matplotlib.pyplot as plt
-
+import os
 import torch
 from torch import nn
 from torch import optim
@@ -11,9 +11,10 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms, models
 from PIL import Image
 import numpy as np
+import json
 
-def save_checkpoint(model, checkpoint_dir):
-    checkpoint_filename = f'checkpoint_{epoch}_{avg_valid_accuracy:.4f}_{current_datetime}.pt'
+def save_checkpoint(model, checkpoint_dir, optimizer, epochs):
+    checkpoint_filename = f'checkpoint.pt'
     checkpoint_path = os.path.join(checkpoint_dir, checkpoint_filename)
 
     state = {
@@ -23,7 +24,8 @@ def save_checkpoint(model, checkpoint_dir):
         'num_epoch' : epochs,
         'optimizer' : optimizer.state_dict(),
         'model_state_dict': model.state_dict(),
-        'class_to_idx' : model.class_to_idx
+        'class_to_idx' : model.class_to_idx,
+        'model_arch' : model
     }
 
     torch.save(state, checkpoint_path)
@@ -90,3 +92,44 @@ def imshow(image, ax=None, title=None):
     ax.imshow(image)
 
     return ax
+
+def check_dataset_folders(dataset_path):
+    train_folder = os.path.join(dataset_path, 'train')
+    test_folder = os.path.join(dataset_path, 'test')
+    valid_folder = os.path.join(dataset_path, 'valid')
+    
+    if not os.path.exists(train_folder):
+        raise FileNotFoundError(f"Train folder '{train_folder}' not found.")
+    if not os.path.exists(test_folder):
+        raise FileNotFoundError(f"Test folder '{test_folder}' not found.")
+    if not os.path.exists(valid_folder):
+        raise FileNotFoundError(f"Valid folder '{valid_folder}' not found.")
+
+    print("All required dataset folders found.")
+
+def print_result(top_class, top_proba) :
+    mydict = {}
+    
+    for k,v in zip(top_class, top_proba):
+        mydict[k] = v
+    
+    print(json.dumps(mydict, indent=2))
+
+def plot_result(im_path, predicted, top_proba, topk):
+    plt.figure(figsize=(8, 4))
+    plt.subplot(1, 2, 1)
+    image = Image.open(im_path)
+    plt.imshow(image)
+    plt.axis('off')
+    plt.title('Input Image')
+    
+    plt.subplot(1, 2, 2)
+    y_pos = np.arange(len(predicted))
+    plt.barh(y_pos, top_proba, align='center')
+    plt.yticks(y_pos, predicted)
+    plt.gca().invert_yaxis()  # Invert y-axis to show the highest probability at the top
+    plt.xlabel('Probability')
+    plt.title('Top ' + str(topk) + ' Predicted Classes')
+    plt.tight_layout()
+    
+    plt.show()

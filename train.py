@@ -7,22 +7,25 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms, models
 from PIL import Image
 import numpy as np
-
-
+from utils import check_dataset_folders, save_checkpoint
+from models_utils import EarlyStopping
 
 parser = argparse.ArgumentParser(description = "Application that train a deeplearnig model classification for a given dataset")
 parser.add_argument('dataset', help = 'the path to the dataset folder')
 parser.add_argument('--save_dir', help = 'the path to the folder for saving checkpoint', default= "checkpoints")
 parser.add_argument('--arch', help = "specify which pretrained checkpoint to use for finetuning", default= "vgg16", choices = ["vgg11", "vgg13", "vgg16"])
 parser.add_argument('--gpu', help = 'tell weither to use gpu or cpu', default = 'gpu', choices = ['cpu', 'gpu'])
-parser.add_argument('--learning_rate', help = "specify the learning rate for the model learning", default = 0.003)
-parser.add_argument('--num_epoch', help = 'give the number of epoch for the training loop', default = 10, type=int)
-parser.add_argument('--hidden_unit', help = 'give the hidden laye size', default = 4096)
+parser.add_argument('--learning_rate', help = "specify the learning rate for the model learning", default = 0.003, type = float)
+parser.add_argument('--num_epoch', help = 'give the number of epoch for the training loop', default = 10, type = int)
+parser.add_argument('--hidden_unit', help = 'give the hidden laye size', default = 4096, type = int)
 
 
 args = parser.parse_args()
 
-#print(args.dataset, args.gpu)
+## Let's check if the dataset is well organized
+
+# Check if the required folders exist
+check_dataset_folders(args.dataset)
 
 # i take the data and preprocess them
 data_dir = args.dataset
@@ -55,7 +58,7 @@ valid_dataloaders = torch.utils.data.DataLoader(valid_datasets, batch_size = 64,
 
 # let's set the number of class
 # List all subdirectories (classes) within the dataset directory
-class_names = os.listdir(data_dir)
+class_names = os.listdir(train_dir)
 
 # Count the number of classes
 num_classes = len(class_names)
@@ -63,7 +66,15 @@ num_classes = len(class_names)
 
 print(args.arch)
 if args.arch == "vgg13" : 
-    model = models.vgg13(weights="DEFAULT")
+    if os.path.exists('vgg13-19584684.pth'):
+        model = models.vgg13(weights=None)
+        checkpoint_path = 'vgg13-19584684.pth'
+        # Load the checkpoint
+        checkpoint = torch.load(checkpoint_path)
+        # Load the weights into the model
+        model.load_state_dict(checkpoint)
+    else :
+        model = models.vgg13(weights="DEFAULT")
 elif args.arch == "vgg11" :
     model = models.vgg11(weights="DEFAULT")
 elif args.arch == "vgg16" :
@@ -94,32 +105,15 @@ criterion = nn.NLLLoss()
 optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
 model.to(device);
 
-
-#define a early stopping function to avoid overfitting
-class EarlyStopping:
-    def __init__(self, patience=5, delta=0):
-        self.patience = patience
-        self.delta = delta
-        self.counter = 0
-        self.best_score = None
-        self.early_stop = False
-
-    def __call__(self, val_loss):
-        if self.best_score is None:
-            self.best_score = val_loss
-        elif val_loss > self.best_score + self.delta:
-            self.counter += 1
-            if self.counter >= self.patience:
-                self.early_stop = True
-        else:
-            self.best_score = val_loss
-            self.counter = 0
 # Instantiate the EarlyStopping object
+
 early_stopping = EarlyStopping(patience=25, delta=0.001)
+
 # i write the training loop and testing
+
 epochs = args.num_epoch
 steps = 0
-print_every = 15
+print_every = 20
 
 train_losses = []
 test_losses = []
@@ -168,6 +162,7 @@ for epoch in range(epochs):
                   f"Train loss: {train_losses[-1]:.3f}.. "
                   f"Test loss: {test_losses[-1]:.3f}.. "
                   f"Test accuracy: {test_accuracies[-1]:.3f}")
+            
             # Check if early stopping criteria met
             early_stopping(test_losses[-1])
 
@@ -190,6 +185,7 @@ with torch.no_grad():
         batch_loss = criterion(logps, labels)
 
         # Accumulate test loss and accuracy
+
         valid_losses.append(batch_loss.item())
         ps = torch.exp(logps)
         top_p, top_class = ps.topk(1, dim=1)
@@ -198,37 +194,17 @@ with torch.no_grad():
         valid_accuracies.append(accuracy.item())
 
 # Calculate mean loss and accuracy over the validation set
+
 avg_valid_loss = sum(valid_losses) / len(valid_losses)
 avg_valid_accuracy = sum(valid_accuracies) / len(valid_accuracies)
 
-print(f"Validation Loss: {avg_valid_loss:.3f}, Validation Accuracy: {avg_valid_accuracy:.3f}")
-# when training i print the loss, accuracy etc
-
 # after training print the validation score
+print(f"Validation Loss: {avg_valid_loss:.3f}, Validation Accuracy: {avg_valid_accuracy:.3f}")
 
-# save the best model
-import datetime
-current_datetime = datetime.datetime.now()
 model.class_to_idx = train_datasets.class_to_idx
 
-def save_checkpoint(model, checkpoint_dir):
-    checkpoint_filename = f'checkpoint.pt'
-    checkpoint_path = os.path.join(checkpoint_dir, checkpoint_filename)
 
-    state = {
-        'input_size' : 25088,
-        'output_size' : 102,
-        'classifier': model.classifier,
-        'num_epoch' : epochs,
-        'optimizer' : optimizer.state_dict(),
-        'model_state_dict': model.state_dict(),
-        'class_to_idx' : model.class_to_idx,
-        'model_arch' : model
-    }
-
-    torch.save(state, checkpoint_path)
-
-checkpoint_folder = 'checkpoints'
+checkpoint_folder = args.save_dir
 os.makedirs(checkpoint_folder, exist_ok=True)
 
-save_checkpoint(model, checkpoint_folder)
+save_checkpoint(model, checkpoint_folder,  optimizer = optimizer, epochs = epochs)
