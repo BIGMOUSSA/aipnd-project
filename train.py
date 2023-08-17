@@ -12,16 +12,17 @@ import numpy as np
 
 parser = argparse.ArgumentParser(description = "Application that train a deeplearnig model classification for a given dataset")
 parser.add_argument('dataset', help = 'the path to the dataset folder')
-parser.add_argument('--save_dir', help = 'the path to the folder for saving checkpoint', default= os.getcwd())
+parser.add_argument('--save_dir', help = 'the path to the folder for saving checkpoint', default= "checkpoints")
 parser.add_argument('--arch', help = "specify which pretrained checkpoint to use for finetuning", default= "vgg16", choices = ["vgg11", "vgg13", "vgg16"])
 parser.add_argument('--gpu', help = 'tell weither to use gpu or cpu', default = 'gpu', choices = ['cpu', 'gpu'])
 parser.add_argument('--learning_rate', help = "specify the learning rate for the model learning", default = 0.003)
-parser.add_argument('--num_epoch', help = 'give the number of epoch for the training loop', default = 10)
+parser.add_argument('--num_epoch', help = 'give the number of epoch for the training loop', default = 10, type=int)
 parser.add_argument('--hidden_unit', help = 'give the hidden laye size', default = 4096)
+
 
 args = parser.parse_args()
 
-print(args.dataset, args.gpu)
+#print(args.dataset, args.gpu)
 
 # i take the data and preprocess them
 data_dir = args.dataset
@@ -211,7 +212,7 @@ current_datetime = datetime.datetime.now()
 model.class_to_idx = train_datasets.class_to_idx
 
 def save_checkpoint(model, checkpoint_dir):
-    checkpoint_filename = f'checkpoint_{epoch}_{avg_valid_accuracy:.4f}_{current_datetime}.pt'
+    checkpoint_filename = f'checkpoint.pt'
     checkpoint_path = os.path.join(checkpoint_dir, checkpoint_filename)
 
     state = {
@@ -221,7 +222,8 @@ def save_checkpoint(model, checkpoint_dir):
         'num_epoch' : epochs,
         'optimizer' : optimizer.state_dict(),
         'model_state_dict': model.state_dict(),
-        'class_to_idx' : model.class_to_idx
+        'class_to_idx' : model.class_to_idx,
+        'model_arch' : model
     }
 
     torch.save(state, checkpoint_path)

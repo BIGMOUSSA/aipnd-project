@@ -32,7 +32,7 @@ def load_checkpoint(checkpoint_path):
     checkpoint = torch.load(checkpoint_path)
 
     # Create a new model instance with the same architecture as saved in the checkpoint
-    model = vgg16()
+    model = checkpoint["model_arch"]
     model.classifier = checkpoint['classifier']
     model.load_state_dict(checkpoint['model_state_dict'])
     model.class_to_idx = checkpoint['class_to_idx']
