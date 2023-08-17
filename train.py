@@ -63,11 +63,11 @@ num_classes = len(class_names)
 
 print(args.arch)
 if args.arch == "vgg13" : 
-    model = models.vgg13(pretrained = True)
+    model = models.vgg13(weights="DEFAULT")
 elif args.arch == "vgg11" :
-    model = models.vgg11(pretrained = True)
+    model = models.vgg11(weights="DEFAULT")
 elif args.arch == "vgg16" :
-    model = models.vgg16(pretrained = True)
+    model = models.vgg16(weights="DEFAULT")
 else :
     print("Not yet handled by the application")
 model
