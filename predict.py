@@ -16,16 +16,23 @@ from models_utils import predict
 
 # definir arg parameters
 
-parser = argparse.ArgumentParser(description = "Application to predict a image label")
+parser = argparse.ArgumentParser(description = "Application to predict a image label using pretrained deep learning model")
 parser.add_argument('image_path', help = 'the path to the image to predict')
-parser.add_argument('checkpoint', help = 'path to the checkpoint model', default= "checkpoints/checkpoint.pt")
-parser.add_argument('--top_k', help = "the number of top classe after prediction", type = int, default = 1)
+parser.add_argument('checkpoint', help = 'path to the checkpoint model')
+parser.add_argument('--top_k', help = "the number of top classe after prediction", type = int, default = 3)
 parser.add_argument('--category_name', help = " a json file for the category name", default= "cat_to_name.json")
 parser.add_argument('--gpu', default = "gpu")
 
 args = parser.parse_args()
+# checking if image path and checkpoint path are available
+if not os.path.exists(args.checkpoint) :
+    raise FileNotFoundError(f"checkpoint folder '{args.checkpoint}' not found.")
+
+if not os.path.exists(args.image_path) :
+    raise FileNotFoundError(f"image folder '{args.image_path}' not found.")
 
 model, optimizer, num_epoch = load_checkpoint(args.checkpoint)
+
 # lead file and make preprocessing
 image = process_image(args.image_path)
 
@@ -40,13 +47,15 @@ else:
 
 top_proba, top_class = predict(args.image_path, model, args.top_k, device)
 # return label / name
+try :
+    with open(args.category_name, 'r') as f:
+        cat_to_name = json.load(f)
 
-with open(args.category_name, 'r') as f:
-    cat_to_name = json.load(f)
+    predicted_flowers = [cat_to_name[idx] for idx in top_class]
+except :
+    print("warning : the given category name is incorrect!")
+    predicted_flowers = top_class
 
-predicted_flowers = [cat_to_name[idx] for idx in top_class]
-#print(" Predicted class :", predicted_flowers)
-#print("Predicted proba : " , top_proba)
 top_proba = [float(p) for p in top_proba]
 print_result(predicted_flowers, top_proba)
 

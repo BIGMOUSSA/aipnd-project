@@ -34,9 +34,12 @@ valid_dir = data_dir + '/valid'
 test_dir = data_dir + '/test'
 
 ### Data processing
+# TODO: Define your transforms for the training, validation, and testing sets
+
 train_transforms = transforms.Compose([
     transforms.RandomResizedCrop(224),
-    transforms.Resize(224),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(10),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
@@ -82,7 +85,7 @@ elif args.arch == "vgg16" :
 else :
     print("Not yet handled by the application")
 model
-# i redefine my model architecture
+
 if args.gpu == "gpu" :
     # Use GPU if it's available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -93,6 +96,7 @@ else:
 for param in model.parameters():
     param.requires_grad = False
 
+# i redefine my model architecture
 model.classifier = nn.Sequential(nn.Linear(25088, args.hidden_unit),
                                  nn.ReLU(),
                                  nn.Dropout(0.2),
@@ -100,14 +104,14 @@ model.classifier = nn.Sequential(nn.Linear(25088, args.hidden_unit),
                                  nn.LogSoftmax(dim=1))
 
 criterion = nn.NLLLoss()
-# i set up optimizer and learning rate
 
-optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
+# i set up optimizer and learning rate
+optimizer = optim.Adam(model.classifier.parameters(), lr = args.learning_rate)
 model.to(device);
 
 # Instantiate the EarlyStopping object
 
-early_stopping = EarlyStopping(patience=25, delta=0.001)
+early_stopping = EarlyStopping(patience = 25, delta = 0.001)
 
 # i write the training loop and testing
 
