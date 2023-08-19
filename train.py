@@ -13,10 +13,10 @@ from models_utils import EarlyStopping
 parser = argparse.ArgumentParser(description = "Application that train a deeplearnig model classification for a given dataset")
 parser.add_argument('dataset', help = 'the path to the dataset folder')
 parser.add_argument('--save_dir', help = 'the path to the folder for saving checkpoint', default= "checkpoints")
-parser.add_argument('--arch', help = "specify which pretrained checkpoint to use for finetuning", default= "vgg16", choices = ["vgg11", "vgg13", "vgg16"])
+parser.add_argument('--arch', help = "specify which pretrained checkpoint to use for finetuning", default= "vgg13", choices = ["vgg11", "vgg13", "vgg16"])
 parser.add_argument('--gpu', help = 'tell weither to use gpu or cpu', default = 'gpu', choices = ['cpu', 'gpu'])
 parser.add_argument('--learning_rate', help = "specify the learning rate for the model learning", default = 0.003, type = float)
-parser.add_argument('--num_epoch', help = 'give the number of epoch for the training loop', default = 10, type = int)
+parser.add_argument('--num_epoch', help = 'give the number of epoch for the training loop', default = 5, type = int)
 parser.add_argument('--hidden_unit', help = 'give the hidden laye size', default = 4096, type = int)
 
 
@@ -26,6 +26,11 @@ args = parser.parse_args()
 
 # Check if the required folders exist
 check_dataset_folders(args.dataset)
+
+# check if the saving directory exist
+
+if not os.path.exists(args.save_dir) :
+    raise FileNotFoundError(f"folder for saving model '{args.save_dir}' not found.")
 
 # i take the data and preprocess them
 data_dir = args.dataset
@@ -67,7 +72,6 @@ class_names = os.listdir(train_dir)
 num_classes = len(class_names)
 # i download the torchvision model given as checkpoint
 
-print(args.arch)
 if args.arch == "vgg13" : 
     if os.path.exists('vgg13-19584684.pth'):
         model = models.vgg13(weights=None)
@@ -122,7 +126,7 @@ print_every = 20
 train_losses = []
 test_losses = []
 test_accuracies = []
-
+print("The training loop is started ...")
 for epoch in range(epochs):
     running_loss = 0
     model.train()
@@ -176,7 +180,7 @@ for epoch in range(epochs):
 
             running_loss = 0
             model.train()
-
+print(" Training loop finished .")
 # printing evaluation score
 valid_losses = []
 valid_accuracies = []

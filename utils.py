@@ -14,6 +14,9 @@ import numpy as np
 import json
 
 def save_checkpoint(model, checkpoint_dir, optimizer, epochs):
+    '''
+        save the checkpoint after training
+    '''
     checkpoint_filename = f'checkpoint.pt'
     checkpoint_path = os.path.join(checkpoint_dir, checkpoint_filename)
 
@@ -31,6 +34,10 @@ def save_checkpoint(model, checkpoint_dir, optimizer, epochs):
     torch.save(state, checkpoint_path)
 
 def load_checkpoint(checkpoint_path):
+    '''
+        Load the checkpoint for prediction
+        args : checkpoint path
+    '''
     checkpoint = torch.load(checkpoint_path)
 
     # Create a new model instance with the same architecture as saved in the checkpoint

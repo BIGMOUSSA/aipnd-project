@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description = "Application to predict a image l
 parser.add_argument('image_path', help = 'the path to the image to predict')
 parser.add_argument('checkpoint', help = 'path to the checkpoint model')
 parser.add_argument('--top_k', help = "the number of top classe after prediction", type = int, default = 3)
-parser.add_argument('--category_name', help = " a json file for the category name", default= "cat_to_name.json")
+parser.add_argument('--category_name', help = " a json file for the category name")
 parser.add_argument('--gpu', default = "gpu")
 
 args = parser.parse_args()
@@ -53,7 +53,7 @@ try :
 
     predicted_flowers = [cat_to_name[idx] for idx in top_class]
 except :
-    print("warning : the given category name is incorrect!")
+    print("warning : you dont give the cat_to_name file or the given category name is incorrect!")
     predicted_flowers = top_class
 
 top_proba = [float(p) for p in top_proba]
